@@ -40,6 +40,7 @@
 #include <QListView>
 #include <QScrollBar>
 #include <functional>
+#include "InstanceDelegate.h"
 #include "VisualGroup.h"
 #include "ui/themes/CatPainter.h"
 
@@ -124,8 +125,8 @@ class InstanceView : public QAbstractItemView {
     int m_rightMargin = 5;
     int m_bottomMargin = 5;
     int m_categoryMargin = 5;
-    int m_spacing = 5;
-    int m_itemWidth = 100;
+    int m_spacing = InstanceTile::Spacing;
+    int m_itemWidth = InstanceTile::Width;
     int m_currentItemsPerRow = -1;
     int m_currentCursorColumn = -1;
     mutable QCache<int, QRect> m_geometryCache;

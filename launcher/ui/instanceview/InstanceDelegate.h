@@ -18,6 +18,13 @@
 #include <QCache>
 #include <QStyledItemDelegate>
 
+// Size of an instance tile in the main window grid.
+namespace InstanceTile {
+constexpr int IconSize = 96;
+constexpr int Width = 160;
+constexpr int Spacing = 8;
+}  // namespace InstanceTile
+
 class ListViewDelegate : public QStyledItemDelegate {
     Q_OBJECT
 

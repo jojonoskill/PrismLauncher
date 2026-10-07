@@ -169,7 +169,7 @@ static QSize viewItemTextSize(const QStyleOptionViewItem* option)
     textLayout.setFont(option->font);
     textLayout.setText(option->text);
     const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, option, option->widget) + 1;
-    QRect bounds(0, 0, 100 - 2 * textMargin, 600);
+    QRect bounds(0, 0, InstanceTile::Width - 2 * textMargin, 600);
     qreal height = 0, widthUsed = 0;
     viewItemTextLayout(textLayout, bounds.width(), height, widthUsed);
     const QSize size(qCeil(widthUsed), qCeil(height));
@@ -190,8 +190,7 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
     QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
 
-    // const int iconSize =  style->pixelMetric(QStyle::PM_IconViewIconSize);
-    const int iconSize = 48;
+    const int iconSize = InstanceTile::IconSize;
     QRect iconbox = opt.rect;
     const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, opt.widget) + 1;
     QRect textRect = opt.rect;
@@ -330,11 +329,11 @@ QSize ListViewDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
 
     QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
     const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, &option, opt.widget) + 1;
-    int height = 48 + textMargin * 2 + 5;  // TODO: turn constants into variables
+    int height = InstanceTile::IconSize + textMargin * 2 + 5;
     QSize szz = viewItemTextSize(&opt);
     height += szz.height();
     // FIXME: maybe the icon items could scale and keep proportions?
-    QSize sz(100, height);
+    QSize sz(InstanceTile::Width, height);
     return sz;
 }
 
@@ -371,7 +370,7 @@ void ListViewDelegate::updateEditorGeometry(QWidget* editor,
                                             const QStyleOptionViewItem& option,
                                             [[maybe_unused]] const QModelIndex& index) const
 {
-    const int iconSize = 48;
+    const int iconSize = InstanceTile::IconSize;
     QRect textRect = option.rect;
     // QStyle *style = option.widget ? option.widget->style() : QApplication::style();
     textRect.adjust(0, iconSize + 5, 0, 0);
