@@ -54,7 +54,8 @@ QString getCreditsHtml()
     QString fileContent = QString::fromUtf8(dataFile.readAll());
     dataFile.close();
 
-    return fileContent.arg(QObject::tr("%1 Developers").arg(BuildConfig.LAUNCHER_DISPLAYNAME), QObject::tr("MultiMC Developers"),
+    // credits.html lists the Prism Launcher team; keep the credit with them rather than this fork's display name
+    return fileContent.arg(QObject::tr("Prism Launcher Developers"), QObject::tr("MultiMC Developers"),
                            QObject::tr("With special thanks to"));
 }
 
@@ -92,7 +93,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
     ui->icon->setPixmap(APPLICATION->logo().pixmap(64));
     ui->title->setText(launcherName);
 
-    ui->versionLabel->setText(BuildConfig.printableVersionString());
+    ui->versionLabel->setText(tr("%1, based on Prism Launcher (not affiliated)").arg(BuildConfig.printableVersionString()));
 
     if (!BuildConfig.BUILD_PLATFORM.isEmpty())
         ui->platformLabel->setText(tr("Platform") + ": " + BuildConfig.BUILD_PLATFORM);
