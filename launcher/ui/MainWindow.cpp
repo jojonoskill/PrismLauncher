@@ -110,7 +110,7 @@
 #include "ui/instanceview/InstanceView.h"
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
-#include "ui/widgets/LabeledToolButton.h"
+#include "ui/widgets/InstanceSidePanel.h"
 
 #include "minecraft/PackProfile.h"
 #include "minecraft/VersionFile.h"
@@ -164,20 +164,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
         // if you try to add a widget to a toolbar in a .ui file
         // qt designer will delete it when you save the file >:(
-        changeIconButton = new LabeledToolButton(this);
-        changeIconButton->setObjectName(QStringLiteral("changeIconButton"));
-        changeIconButton->setIcon(QIcon::fromTheme("news"));
-        changeIconButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        connect(changeIconButton, &QToolButton::clicked, this, &MainWindow::on_actionChangeInstIcon_triggered);
-        ui->instanceToolBar->insertWidgetBefore(ui->actionLaunchInstance, changeIconButton);
-
-        renameButton = new LabeledToolButton(this);
-        renameButton->setObjectName(QStringLiteral("renameButton"));
-        renameButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        connect(renameButton, &QToolButton::clicked, this, &MainWindow::on_actionRenameInstance_triggered);
-        ui->instanceToolBar->insertWidgetBefore(ui->actionLaunchInstance, renameButton);
-
-        ui->instanceToolBar->insertSeparator(ui->actionLaunchInstance);
+        instancePanel = new InstanceSidePanel({ .launch = ui->actionLaunchInstance,
+                                                .kill = ui->actionKillInstance,
+                                                .changeIcon = ui->actionChangeInstIcon,
+                                                .rename = ui->actionRenameInstance,
+                                                .edit = ui->actionEditInstance,
+                                                .changeGroup = ui->actionChangeInstGroup,
+                                                .viewFolder = ui->actionViewSelectedInstFolder,
+                                                .exportInstance = ui->actionExportInstance,
+                                                .copy = ui->actionCopyInstance,
+                                                .deleteInstance = ui->actionDeleteInstance,
+                                                .createShortcut = ui->actionCreateInstanceShortcut },
+                                              this);
+        ui->instanceToolBar->QToolBar::addWidget(instancePanel);
 
         // restore the instance toolbar settings
         auto const setting_name = QString("WideBarVisibility_%1").arg(ui->instanceToolBar->objectName());
@@ -462,8 +461,8 @@ void MainWindow::retranslateUi()
         ui->actionAccountsButton->setText(profileLabel);
     }
 
-    changeIconButton->setToolTip(ui->actionChangeInstIcon->toolTip());
-    renameButton->setToolTip(ui->actionRenameInstance->toolTip());
+    if (instancePanel)
+        instancePanel->retranslate();
 
     // replace the %1 with the launcher display name in some actions
     if (helpMenuButton->toolTip().contains("%1"))
@@ -1211,7 +1210,7 @@ void MainWindow::on_actionChangeInstIcon_triggered()
         m_selectedInstance->setIconKey(dlg.selectedIconKey);
         auto icon = APPLICATION->icons()->getIcon(dlg.selectedIconKey);
         ui->actionChangeInstIcon->setIcon(icon);
-        changeIconButton->setIcon(icon);
+        instancePanel->setIcon(icon);
     }
 }
 
@@ -1220,7 +1219,7 @@ void MainWindow::iconUpdated(QString icon)
     if (icon == m_currentInstIcon) {
         auto new_icon = APPLICATION->icons()->getIcon(m_currentInstIcon);
         ui->actionChangeInstIcon->setIcon(new_icon);
-        changeIconButton->setIcon(new_icon);
+        instancePanel->setIcon(new_icon);
     }
 }
 
@@ -1229,7 +1228,7 @@ void MainWindow::updateInstanceToolIcon(QString new_icon)
     m_currentInstIcon = new_icon;
     auto icon = APPLICATION->icons()->getIcon(m_currentInstIcon);
     ui->actionChangeInstIcon->setIcon(icon);
-    changeIconButton->setIcon(icon);
+    instancePanel->setIcon(icon);
 }
 
 void MainWindow::setSelectedInstanceById(const QString& id)
@@ -1673,7 +1672,7 @@ void MainWindow::instanceChanged(const QModelIndex& current, [[maybe_unused]] co
 
         ui->actionKillInstance->setEnabled(m_selectedInstance->isRunning());
         ui->actionExportInstance->setEnabled(m_selectedInstance->canExport());
-        renameButton->setText(m_selectedInstance->name());
+        instancePanel->setInstance(m_selectedInstance);
         m_statusLeft->setText(m_selectedInstance->getStatusbarDescription());
         updateStatusCenter();
         updateInstanceToolIcon(m_selectedInstance->iconKey());
@@ -1715,7 +1714,7 @@ void MainWindow::selectionBad()
     ui->instanceToolBar->setEnabled(false);
     setInstanceActionsEnabled(false);
     updateLaunchButton();
-    renameButton->setText(tr("Rename Instance"));
+    instancePanel->setInstance(nullptr);
     updateInstanceToolIcon("grass");
 
     // ...and then see if we can enable the previously selected instance

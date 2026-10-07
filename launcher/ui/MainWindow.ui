@@ -114,16 +114,6 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionLaunchInstance"/>
-   <addaction name="actionKillInstance"/>
-   <addaction name="separator"/>
-   <addaction name="actionEditInstance"/>
-   <addaction name="actionChangeInstGroup"/>
-   <addaction name="actionViewSelectedInstFolder"/>
-   <addaction name="actionExportInstance"/>
-   <addaction name="actionCopyInstance"/>
-   <addaction name="actionDeleteInstance"/>
-   <addaction name="actionCreateInstanceShortcut"/>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

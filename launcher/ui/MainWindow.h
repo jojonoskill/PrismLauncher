@@ -53,14 +53,13 @@ class LaunchController;
 class NewsChecker;
 class QToolButton;
 class InstanceProxyModel;
-class LabeledToolButton;
+class InstanceSidePanel;
 class QLabel;
 class MinecraftLauncher;
 class BaseProfilerFactory;
 class InstanceView;
 class KonamiCode;
 class InstanceTask;
-class LabeledToolButton;
 
 namespace Ui {
 class MainWindow;
@@ -238,8 +237,7 @@ class MainWindow : public QMainWindow {
     QToolButton* newsLabel = nullptr;
     QLabel* m_statusLeft = nullptr;
     QLabel* m_statusCenter = nullptr;
-    LabeledToolButton* changeIconButton = nullptr;
-    LabeledToolButton* renameButton = nullptr;
+    InstanceSidePanel* instancePanel = nullptr;
     QToolButton* helpMenuButton = nullptr;
     KonamiCode* secretEventFilter = nullptr;
 

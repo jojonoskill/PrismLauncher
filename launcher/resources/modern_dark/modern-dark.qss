@@ -66,82 +66,123 @@ QToolBar#mainToolBar QToolButton {
 
 QToolBar#instanceToolBar {
     border-left: 1px solid #2a2a30;
-    padding: 18px 10px;
-    qproperty-iconSize: 20px 20px;
+    padding: 18px 16px;
 }
 
-QToolBar#instanceToolBar QToolButton {
-    font-size: 12pt;
-    padding: 5px 16px 5px 10px;
+/* ---------- Instance side panel ---------- */
+
+QWidget#instanceSidePanel {
+    min-width: 290px;
+    max-width: 290px;
 }
 
-/* Instance name under the big icon in the sidebar */
-QToolBar#instanceToolBar LabeledToolButton,
-QToolBar#instanceToolBar LabeledToolButton QLabel {
-    font-size: 13.5pt;
+QToolButton#instanceIconButton {
+    padding: 4px;
+    border-radius: 12px;
+}
+
+QPushButton#instanceNameButton {
+    background: transparent;
+    border: none;
+    font-size: 15pt;
+    font-weight: 600;
+    padding: 0px 4px;
+    min-height: 0px;
+    text-align: left;
+}
+
+QPushButton#instanceNameButton:hover {
+    color: #86efac;
+}
+
+QLabel#instanceSubtitle {
+    color: #a1a1aa;
+    font-size: 10.5pt;
+    padding-left: 5px;
+}
+
+QFrame[statCard="true"] {
+    background-color: #141417;
+    border: 1px solid #26262b;
+    border-radius: 10px;
+}
+
+QLabel#statTitle {
+    color: #71717a;
+    font-size: 9.5pt;
+}
+
+QLabel#statValue {
+    color: #e4e4e7;
+    font-size: 11.5pt;
     font-weight: 600;
 }
 
-/* Big instance icon at the top of the sidebar */
-QToolBar#instanceToolBar #changeIconButton {
-    qproperty-iconSize: 112px 112px;
-    padding: 7px;
-}
-
-/* Hero "Launch" button (matched by its label, so English UI only) */
-QToolBar#instanceToolBar QToolButton[text="Launch"] {
+QToolButton#launchButton {
     background-color: #1f4d30;
     color: #dcfce7;
     border: 1px solid #4ade80;
     border-radius: 12px;
-    font-size: 13.5pt;
+    font-size: 14pt;
     font-weight: 700;
-    padding: 9px 45px 9px 14px;
-    margin: 4px 4px 7px 4px;
-    min-height: 28px;
-    qproperty-iconSize: 20px 20px;
+    padding: 10px 45px 10px 16px;
+    min-height: 30px;
+    qproperty-iconSize: 22px 22px;
 }
 
-QToolBar#instanceToolBar QToolButton[text="Launch"]:hover {
+QToolButton#launchButton:hover {
     background-color: #26603b;
     border-color: #86efac;
 }
 
-QToolBar#instanceToolBar QToolButton[text="Launch"]:pressed {
+QToolButton#launchButton:pressed {
     background-color: #2d7046;
 }
 
-QToolBar#instanceToolBar QToolButton[text="Launch"]:disabled {
+QToolButton#launchButton:disabled {
     background-color: #202024;
     color: #5c5c66;
     border-color: #2a2a30;
 }
 
-QToolBar#instanceToolBar QToolButton[text="Launch"]::menu-button {
+QToolButton#launchButton::menu-button {
     width: 35px;
     border-left: 1px solid #2f6b44;
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
 }
 
-QToolBar#instanceToolBar QToolButton[text="Launch"]::menu-button:hover {
+QToolButton#launchButton::menu-button:hover {
     background-color: #2d7046;
 }
 
-QToolBar#instanceToolBar QToolButton[text="Launch"]::menu-arrow {
+QToolButton#launchButton::menu-arrow {
     subcontrol-position: center center;
-    right: 0px;
-    bottom: 0px;
 }
 
-/* "Kill" turns red when a game is running */
-QToolBar#instanceToolBar QToolButton[text="Kill"]:enabled {
-    color: #fca5a5;
+QToolButton#instanceActionButton, QToolButton#killButton {
+    padding: 7px;
+    border-radius: 8px;
+    font-size: 14pt;
 }
 
-QToolBar#instanceToolBar QToolButton[text="Kill"]:enabled:hover {
+QToolButton#instanceActionButton[popupMode="2"] {
+    padding-right: 7px;
+}
+
+QToolButton#instanceActionButton::menu-indicator {
+    image: none;
+    width: 0px;
+}
+
+/* Kill only appears while the game runs, tinted red */
+QToolButton#killButton {
     background-color: #3b1d1f;
     border-color: #5c2a2d;
+}
+
+QToolButton#killButton:hover {
+    background-color: #4c2326;
 }
 
 /* News and status bar read as one footer */
