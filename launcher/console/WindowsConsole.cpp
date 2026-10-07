@@ -164,9 +164,13 @@ std::error_code EnableAnsiSupport()
 
 void FreeWindowsConsole()
 {
-    fclose(stdout);
-    fclose(stdin);
-    fclose(stderr);
+    // Point the CRT streams at "nul" instead of closing them: code that still runs after this
+    // (logging during shutdown, static destructors) may write to them, and writing to a closed
+    // FILE makes the UCRT terminate the process with a fail-fast exception.
+    FILE* dummyFile;
+    freopen_s(&dummyFile, "nul", "w", stdout);
+    freopen_s(&dummyFile, "nul", "r", stdin);
+    freopen_s(&dummyFile, "nul", "w", stderr);
     FreeConsole();
 }
 

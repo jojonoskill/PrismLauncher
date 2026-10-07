@@ -48,6 +48,9 @@ int main(int argc, char* argv[])
     console::WindowsConsoleGuard _consoleGuard;
 #endif
 
+    // Built-in widget themes are applied while Application is constructed, so their resources must exist first
+    Q_INIT_RESOURCE(modern_dark);
+
     // initialize Qt
     Application app(argc, argv);
     switch (app.status()) {
