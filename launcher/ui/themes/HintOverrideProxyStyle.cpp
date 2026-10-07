@@ -18,6 +18,7 @@
 
 #include "HintOverrideProxyStyle.h"
 
+#include <QFontMetricsF>
 #include <QPainter>
 #include <QToolButton>
 
@@ -61,6 +62,16 @@ void HintOverrideProxyStyle::drawItemText(QPainter* painter,
     if (auto* button = dynamic_cast<QToolButton*>(painter->device())) {
         if (button->toolButtonStyle() == Qt::ToolButtonTextBesideIcon && !button->icon().isNull()) {
             textRect.translate(button->layoutDirection() == Qt::RightToLeft ? -ToolButtonExtraIconSpacing : ToolButtonExtraIconSpacing, 0);
+
+            // AlignVCenter centers the whole line box (ascent + descent), which leaves the visible
+            // letters sitting low next to the icon. Center on the glyphs instead: halfway between
+            // cap height and x-height above the baseline.
+            if (flags & Qt::AlignVCenter) {
+                const QFontMetricsF fm(painter->font());
+                const qreal glyphCenter = fm.ascent() - (fm.capHeight() + fm.xHeight()) / 4.0;
+                const qreal lineCenter = (fm.ascent() + fm.descent()) / 2.0;
+                textRect.translate(0, -qRound(glyphCenter - lineCenter));
+            }
         }
     }
     QProxyStyle::drawItemText(painter, textRect, flags, pal, enabled, text, textRole);
