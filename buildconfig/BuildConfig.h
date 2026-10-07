@@ -62,6 +62,8 @@ class Config {
     int VERSION_MINOR;
     /// The patch version number.
     int VERSION_PATCH;
+    /// Our own release number on top of the upstream version.
+    int VERSION_FORK;
 
     /**
      * The version channel

@@ -1,0 +1,137 @@
+name: Custom Windows Release
+
+# Builds the portable Windows (MinGW, x64) package of this fork.
+# - Push a tag matching the version in CMakeLists.txt (e.g. 11.1.1.1) to publish a GitHub release;
+#   installed copies then find it through the built-in updater.
+# - Run it manually (workflow_dispatch) to just build and download the zip from the run's artifacts.
+
+on:
+  push:
+    tags:
+      - "*.*.*.*"
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  # Must match how the updater picks assets: platform "windows-mingw-w64", Qt 6, "portable" in the asset name.
+  ARTIFACT_NAME: Windows-MinGW-w64-Qt6
+  ASSET_PREFIX: PrismLauncher-Windows-MinGW-w64-Portable
+
+jobs:
+  build:
+    name: Build portable Windows package
+    runs-on: windows-2022
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Fetch required submodules
+        shell: bash
+        run: git submodule update --init --depth 1 libraries/libnbtplusplus
+
+      - name: Set up Java (for the launcher's helper jars)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          path-type: inherit
+          install: >-
+            git
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
+            pkgconf:p
+            extra-cmake-modules:p
+            qt6-base:p
+            qt6-svg:p
+            qt6-imageformats:p
+            qt6-networkauth:p
+            qt6-tools:p
+            qt6-5compat:p
+            cmark:p
+            libarchive:p
+            tomlplusplus:p
+            zlib:p
+            qrencode:p
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DBUILD_TESTING=OFF \
+            -DENABLE_LTO=ON \
+            -DLauncher_BUILD_ARTIFACT="$ARTIFACT_NAME" \
+            -DLauncher_BUILD_PLATFORM=custom
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package (portable)
+        run: |
+          cmake --install build
+          cmake --install build --component portable
+          # the updater uses manifest.txt to know which files belong to the launcher
+          touch install/manifest.txt
+          for l in $(find install -type f); do l=${l#install/}; echo "$l"; done > install/manifest.txt
+
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=dev-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path install\* -DestinationPath "${{ env.ASSET_PREFIX }}-${{ steps.version.outputs.version }}.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ASSET_PREFIX }}-${{ steps.version.outputs.version }}
+          path: ${{ env.ASSET_PREFIX }}-${{ steps.version.outputs.version }}.zip
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download package
+        uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" *.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --notes "Custom build of Prism Launcher $TAG (portable Windows x64)."

@@ -182,16 +182,19 @@ set(Launcher_LEGACY_FMLLIBS_BASE_URL "https://files.prismlauncher.org/fmllibs/" 
 set(Launcher_VERSION_MAJOR 11)
 set(Launcher_VERSION_MINOR 1)
 set(Launcher_VERSION_PATCH 1)
+# Our own release number on top of the upstream version: 11.1.1.1, 11.1.1.2, ... Reset to 1 after merging a new
+# upstream release. The updater compares versions section by section, so 11.1.1.1 counts as newer than upstream 11.1.1.
+set(Launcher_VERSION_FORK 1)
 
-set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}")
-set(Launcher_VERSION_NAME4 "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.0")
-set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_MINOR},${Launcher_VERSION_PATCH},0")
+set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_FORK}")
+set(Launcher_VERSION_NAME4 "${Launcher_VERSION_NAME}")
+set(Launcher_VERSION_NAME4_COMMA "${Launcher_VERSION_MAJOR},${Launcher_VERSION_MINOR},${Launcher_VERSION_PATCH},${Launcher_VERSION_FORK}")
 
 # Build platform.
 set(Launcher_BUILD_PLATFORM "unknown" CACHE STRING "A short string identifying the platform that this build was built for. Only used to display in the about dialog.")
 
 # Github repo URL with releases for updater
-set(Launcher_UPDATER_GITHUB_REPO "https://github.com/PrismLauncher/PrismLauncher" CACHE STRING "Base github URL for the updater.")
+set(Launcher_UPDATER_GITHUB_REPO "https://github.com/jojonoskill/PrismLauncher" CACHE STRING "Base github URL for the updater.")
 
 # Name to help updater identify valid artifacts
 set(Launcher_BUILD_ARTIFACT "" CACHE STRING "Artifact name to help the updater identify valid artifacts.")
