@@ -51,17 +51,52 @@ QToolBar {
     padding: 6px 8px;
 }
 
-QToolBar#mainToolBar {
-    border-bottom: 1px solid #2a2a30;
-    padding: 10px 18px;
-    spacing: 7px;
-    qproperty-iconSize: 26px 26px;
+/* Navigation rail (the main toolbar, docked on the left) */
+QToolBar#navRail {
+    background-color: #111113;
+    border-right: 1px solid #2a2a30;
+    padding: 12px 8px;
+    spacing: 6px;
+    qproperty-iconSize: 28px 28px;
 }
 
-QToolBar#mainToolBar QToolButton {
-    font-size: 12.5pt;
+QToolBar#navRail QToolButton {
+    color: #a1a1aa;
+    font-size: 9.5pt;
     font-weight: 600;
-    padding: 7px 20px 7px 14px;
+    padding: 8px 4px 6px 4px;
+    min-width: 64px;
+    border-radius: 12px;
+}
+
+QToolBar#navRail QToolButton:hover {
+    color: #e4e4e7;
+    background-color: #1f1f23;
+    border-color: transparent;
+}
+
+QToolBar#navRail QToolButton:pressed {
+    background-color: #26262b;
+}
+
+/* rail menus open on click; no arrows needed */
+QToolBar#navRail QToolButton[popupMode="2"] {
+    padding-right: 4px;
+}
+
+QToolBar#navRail QToolButton::menu-indicator {
+    image: none;
+    width: 0px;
+}
+
+QToolButton#railAccountButton {
+    qproperty-iconSize: 36px 36px;
+    padding: 6px;
+}
+
+QToolBar#navRail::separator {
+    height: 1px;
+    margin: 6px 10px;
 }
 
 QToolBar#instanceToolBar {
@@ -251,8 +286,7 @@ QToolButton::menu-arrow {
 }
 
 /* Instant-popup menus (Folders, Help, account): room for the arrow next to the text */
-QToolButton[popupMode="2"],
-QToolBar#mainToolBar QToolButton[popupMode="2"] {
+QToolButton[popupMode="2"] {
     padding-right: 34px;
 }
 

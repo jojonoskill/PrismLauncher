@@ -191,18 +191,23 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // set the menu for the folders help, accounts, and export tool buttons
     {
-        auto foldersMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionFoldersButton));
+        auto foldersMenuButton = dynamic_cast<QToolButton*>(ui->navRail->widgetForAction(ui->actionFoldersButton));
         ui->actionFoldersButton->setMenu(ui->foldersMenu);
         foldersMenuButton->setPopupMode(QToolButton::InstantPopup);
 
-        helpMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionHelpButton));
+        helpMenuButton = dynamic_cast<QToolButton*>(ui->navRail->widgetForAction(ui->actionHelpButton));
         ui->actionHelpButton->setMenu(new QMenu(this));
         ui->actionHelpButton->menu()->addActions(ui->helpMenu->actions());
         ui->actionHelpButton->menu()->removeAction(ui->actionCheckUpdate);
         helpMenuButton->setPopupMode(QToolButton::InstantPopup);
 
-        auto accountMenuButton = dynamic_cast<QToolButton*>(ui->mainToolBar->widgetForAction(ui->actionAccountsButton));
+        auto accountMenuButton = dynamic_cast<QToolButton*>(ui->navRail->widgetForAction(ui->actionAccountsButton));
         accountMenuButton->setPopupMode(QToolButton::InstantPopup);
+        // just the face in the rail; the name is in its tooltip and in the footer
+        accountMenuButton->setObjectName("railAccountButton");
+        accountMenuButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        accountMenuButton->style()->unpolish(accountMenuButton);  // pick up the #railAccountButton rules
+        accountMenuButton->style()->polish(accountMenuButton);
 
         auto exportInstanceMenu = new QMenu(this);
         exportInstanceMenu->addAction(ui->actionExportInstanceZip);
@@ -232,7 +237,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         // this is only needed on gamescope because it defaults to an X11/XWayland session and
         // does not implement decorations
         if (qgetenv("XDG_CURRENT_DESKTOP") == "gamescope") {
-            ui->mainToolBar->addAction(ui->actionCloseWindow);
+            ui->navRail->addAction(ui->actionCloseWindow);
         }
 
         ui->actionViewJavaFolder->setEnabled(BuildConfig.JAVA_DOWNLOADER_ENABLED);
@@ -416,10 +421,17 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(APPLICATION->instances(), &InstanceList::rowsRemoved, this, &MainWindow::updateStatusCenter);
     updateNewsLabel();
 
-    // Add "manage accounts" button, right align
+    // The main toolbar is a vertical navigation rail on the left: Add and Folders on top,
+    // everything else pushed to the bottom by this spacer.
     QWidget* spacer = new QWidget();
-    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    ui->mainToolBar->insertWidget(ui->actionAccountsButton, spacer);
+    spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    ui->navRail->insertWidget(ui->actionCheckUpdate, spacer);
+
+    connect(ui->navRail, &QToolBar::orientationChanged, [this](Qt::Orientation) { ui->navRail->setOrientation(Qt::Vertical); });
+
+    // Short labels for the rail; menus keep using the full action text.
+    ui->actionAddInstance->setIconText(tr("Add"));
+    ui->actionCheckUpdate->setIconText(tr("Update"));
 
     // Use undocumented property... https://stackoverflow.com/questions/7121718/create-a-scrollbar-in-a-submenu-qt
     ui->accountsMenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
@@ -495,6 +507,7 @@ void MainWindow::retranslateUi()
     if (defaultAccount) {
         auto profileLabel = profileInUseFilter(defaultAccount->displayName(), defaultAccount->isInUse());
         ui->actionAccountsButton->setText(profileLabel);
+        ui->actionAccountsButton->setToolTip(profileLabel);
     }
 
     if (instancePanel)
@@ -517,7 +530,7 @@ MainWindow::~MainWindow() {}
 QMenu* MainWindow::createPopupMenu()
 {
     QMenu* filteredMenu = QMainWindow::createPopupMenu();
-    filteredMenu->removeAction(ui->mainToolBar->toggleViewAction());
+    filteredMenu->removeAction(ui->navRail->toggleViewAction());
 
     filteredMenu->addAction(ui->actionToggleStatusBar);
     filteredMenu->addAction(ui->actionLockToolbars);
@@ -531,7 +544,7 @@ void MainWindow::setStatusBarVisibility(bool state)
 }
 void MainWindow::lockToolbars(bool state)
 {
-    ui->mainToolBar->setMovable(!state);
+    ui->navRail->setMovable(!state);
     ui->instanceToolBar->setMovable(!state);
     APPLICATION->settings()->set("ToolbarsLocked", state);
 }
@@ -542,14 +555,14 @@ void MainWindow::konamiTriggered()
         " stop:0 rgba(125, 0, 0, 255), stop:0.166 rgba(125, 125, 0, 255), stop:0.333 rgba(0, 125, 0, 255), stop:0.5 rgba(0, 125, 125, "
         "255), stop:0.666 rgba(0, 0, 125, 255), stop:0.833 rgba(125, 0, 125, 255), stop:1 rgba(125, 0, 0, 255));";
     QString stylesheet = "background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0," + gradient;
-    if (ui->mainToolBar->styleSheet() == stylesheet) {
-        ui->mainToolBar->setStyleSheet("");
+    if (ui->navRail->styleSheet() == stylesheet) {
+        ui->navRail->setStyleSheet("");
         ui->instanceToolBar->setStyleSheet("");
         ui->centralWidget->setStyleSheet("");
         ui->statusBar->setStyleSheet("");
         qDebug() << "Super Secret Mode DEACTIVATED!";
     } else {
-        ui->mainToolBar->setStyleSheet(stylesheet);
+        ui->navRail->setStyleSheet(stylesheet);
         ui->instanceToolBar->setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1," + gradient);
         ui->centralWidget->setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1," + gradient);
         ui->statusBar->setStyleSheet(stylesheet);
@@ -623,7 +636,7 @@ void MainWindow::showInstanceContextMenu(const QPoint& pos)
 void MainWindow::updateMainToolBar()
 {
     ui->menuBar->setVisible(APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool());
-    ui->mainToolBar->setVisible(ui->menuBar->isNativeMenuBar() || !APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool());
+    ui->navRail->setVisible(ui->menuBar->isNativeMenuBar() || !APPLICATION->settings()->get("MenuBarInsteadOfToolBar").toBool());
 }
 
 void MainWindow::updateLaunchButton()
