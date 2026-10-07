@@ -10,7 +10,7 @@ endif()
 
 set(Launcher_CommonName "PrismLauncher")
 # Shown name of this fork; the internal name (CommonName) stays PrismLauncher so binaries, data folders and updates keep working.
-set(Launcher_DisplayName "Elytra")
+set(Launcher_DisplayName "Elytra Launcher")
 set(Launcher_AppID "org.prismlauncher.PrismLauncher")
 set(Launcher_Domain "prismlauncher.org")
 set(Launcher_Git "https://github.com/PrismLauncher/PrismLauncher")
