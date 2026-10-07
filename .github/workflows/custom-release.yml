@@ -134,4 +134,4 @@ jobs:
           gh release create "$TAG" *.zip \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
-            --notes "Custom build of Prism Launcher $TAG (portable Windows x64)."
+            --notes "Elytra Launcher $TAG (portable Windows x64), a customized build based on Prism Launcher. Not affiliated with the Prism Launcher project."
