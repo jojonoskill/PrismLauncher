@@ -102,6 +102,7 @@ class InstanceView : public QAbstractItemView {
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void leaveEvent(QEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
@@ -113,6 +114,7 @@ class InstanceView : public QAbstractItemView {
     void startDrag(Qt::DropActions supportedActions) override;
 
     void updateScrollbar();
+    void setHoverIndex(const QModelIndex& index);
 
    private:
     friend struct VisualGroup;
@@ -121,8 +123,8 @@ class InstanceView : public QAbstractItemView {
     visibilityFunction m_fVisibility;
 
     // geometry
-    int m_leftMargin = 5;
-    int m_rightMargin = 5;
+    int m_leftMargin = 12;
+    int m_rightMargin = 12;
     int m_bottomMargin = 5;
     int m_categoryMargin = 5;
     int m_spacing = InstanceTile::Spacing;
@@ -135,6 +137,7 @@ class InstanceView : public QAbstractItemView {
     // point where the currently active mouse action started in geometry coordinates
     QPoint m_pressedPosition;
     QPersistentModelIndex m_pressedIndex;
+    QPersistentModelIndex m_hoverIndex;
     bool m_pressedAlreadySelected;
     VisualGroup* m_pressedCategory;
     QItemSelectionModel::SelectionFlag m_ctrlDragSelectionFlag;

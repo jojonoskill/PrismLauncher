@@ -73,6 +73,7 @@ InstanceView::InstanceView(QWidget* parent) : QAbstractItemView(parent)
     setAcceptDrops(true);
     setAutoScroll(true);
     setPaintCat(APPLICATION->settings()->get("TheCat").toBool());
+    viewport()->setMouseTracking(true);  // for tile hover highlights
     connect(verticalScrollBar(), &QScrollBar::valueChanged, viewport(), QOverload<>::of(&QWidget::update));
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, viewport(), QOverload<>::of(&QWidget::update));
 }
@@ -317,9 +318,26 @@ void InstanceView::mousePressEvent(QMouseEvent* event)
     }
 }
 
+void InstanceView::setHoverIndex(const QModelIndex& index)
+{
+    if (index == m_hoverIndex) {
+        return;
+    }
+    m_hoverIndex = index;
+    viewport()->update();
+}
+
+void InstanceView::leaveEvent(QEvent* event)
+{
+    setHoverIndex(QModelIndex());
+    QAbstractItemView::leaveEvent(event);
+}
+
 void InstanceView::mouseMoveEvent(QMouseEvent* event)
 {
     executeDelayedItemsLayout();
+
+    setHoverIndex(event->buttons() == Qt::NoButton ? indexAt(event->pos()) : QModelIndex());
 
     QPoint topLeft;
     QPoint visualPos = event->pos();
@@ -540,6 +558,11 @@ void InstanceView::paintEvent([[maybe_unused]] QPaintEvent* event)
             option.state &= ~QStyle::State_Selected;
         }
         option.state |= (index == currentIndex()) ? QStyle::State_HasFocus : QStyle::State_None;
+        if (index == m_hoverIndex) {
+            option.state |= QStyle::State_MouseOver;
+        } else {
+            option.state &= ~QStyle::State_MouseOver;
+        }
         if (!(flags & Qt::ItemIsEnabled)) {
             option.state &= ~QStyle::State_Enabled;
         }

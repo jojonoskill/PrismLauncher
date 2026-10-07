@@ -125,6 +125,10 @@ VisualGroup::HitResults VisualGroup::hitScan(const QPoint& pos) const
     if (y < y_start) {
         results = VisualGroup::NoHit;
     } else if (y < body_start) {
+        // a hidden header is only padding, so it must not collapse the group when clicked
+        if (isHeaderHidden()) {
+            return VisualGroup::NoHit;
+        }
         results = VisualGroup::HeaderHit;
         int collapseSize = headerHeight() - 4;
 
@@ -141,6 +145,10 @@ VisualGroup::HitResults VisualGroup::hitScan(const QPoint& pos) const
 
 void VisualGroup::drawHeader(QPainter* painter, const QStyleOptionViewItem& option) const
 {
+    if (isHeaderHidden()) {
+        return;
+    }
+
     QRect optRect = option.rect;
     optRect.setTop(optRect.top() + 7);
     QFont font(QApplication::font());
@@ -215,8 +223,18 @@ int VisualGroup::totalHeight() const
     return headerHeight() + contentHeight();
 }
 
-int VisualGroup::headerHeight()
+bool VisualGroup::isHeaderHidden() const
 {
+    // keep it while collapsed, otherwise there'd be no way to expand the group again
+    return text.isEmpty() && !collapsed && view->m_groups.size() == 1;
+}
+
+int VisualGroup::headerHeight() const
+{
+    if (isHeaderHidden()) {
+        return 8;  // just some breathing room above the first row of tiles
+    }
+
     QFont font(QApplication::font());
     font.setBold(true);
     QFontMetrics fontMetrics(font);

@@ -76,7 +76,10 @@ struct VisualGroup {
     int totalHeight() const;
 
     /// height of the group header, in pixels
-    static int headerHeight();
+    int headerHeight() const;
+
+    /// the header is pointless (and hidden) when the only group is the unnamed default one
+    bool isHeaderHidden() const;
 
     /// height of the group content, in pixels
     int contentHeight() const;

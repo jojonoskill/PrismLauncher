@@ -23,6 +23,9 @@ namespace InstanceTile {
 constexpr int IconSize = 96;
 constexpr int Width = 160;
 constexpr int Spacing = 8;
+constexpr int Padding = 10;      // inside the tile, around the icon and name
+constexpr int IconTextGap = 6;   // between icon and name
+constexpr qreal CornerRadius = 10;
 }  // namespace InstanceTile
 
 class ListViewDelegate : public QStyledItemDelegate {
