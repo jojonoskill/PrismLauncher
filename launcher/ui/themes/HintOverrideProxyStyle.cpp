@@ -18,6 +18,9 @@
 
 #include "HintOverrideProxyStyle.h"
 
+#include <QPainter>
+#include <QToolButton>
+
 HintOverrideProxyStyle::HintOverrideProxyStyle(QStyle* style) : QProxyStyle(style)
 {
     setObjectName(baseStyle()->objectName());
@@ -38,4 +41,27 @@ int HintOverrideProxyStyle::styleHint(QStyle::StyleHint hint,
         return Qt::RightButton;
 
     return QProxyStyle::styleHint(hint, option, widget, returnData);
+}
+
+// Qt hardcodes a 4px gap between a tool button's icon and its text, which looks cramped.
+// Both the plain and the stylesheet code paths draw the label through drawItemText(), so we
+// nudge the text right here. QToolButton::sizeHint() doesn't know about the extra space,
+// so themes should give such buttons at least ToolButtonExtraIconSpacing px of right padding.
+static constexpr int ToolButtonExtraIconSpacing = 6;
+
+void HintOverrideProxyStyle::drawItemText(QPainter* painter,
+                                          const QRect& rect,
+                                          int flags,
+                                          const QPalette& pal,
+                                          bool enabled,
+                                          const QString& text,
+                                          QPalette::ColorRole textRole) const
+{
+    QRect textRect = rect;
+    if (auto* button = dynamic_cast<QToolButton*>(painter->device())) {
+        if (button->toolButtonStyle() == Qt::ToolButtonTextBesideIcon && !button->icon().isNull()) {
+            textRect.translate(button->layoutDirection() == Qt::RightToLeft ? -ToolButtonExtraIconSpacing : ToolButtonExtraIconSpacing, 0);
+        }
+    }
+    QProxyStyle::drawItemText(painter, textRect, flags, pal, enabled, text, textRole);
 }
