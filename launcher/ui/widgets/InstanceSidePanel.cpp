@@ -198,7 +198,7 @@ InstanceSidePanel::InstanceSidePanel(const Actions& actions, QWidget* parent) : 
         m_moreButton = new QToolButton(this);
         m_moreButton->setObjectName("instanceActionButton");
         m_moreButton->setIcon(makeMoreIcon(palette().color(QPalette::WindowText)));
-        m_moreButton->setIconSize(QSize(20, 20));
+        m_moreButton->setIconSize(QSize(26, 26));
         m_moreButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
         m_moreButton->setPopupMode(QToolButton::InstantPopup);
         m_moreButton->setMenu(moreMenu);
@@ -217,7 +217,7 @@ QToolButton* InstanceSidePanel::makeActionButton(QAction* action)
     button->setObjectName("instanceActionButton");
     button->setDefaultAction(action);
     button->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    button->setIconSize(QSize(20, 20));
+    button->setIconSize(QSize(26, 26));
     return button;
 }
 
