@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/themes/modern-dark">
+        <file>modern-dark.qss</file>
+        <file>arrow-down.svg</file>
+        <file>arrow-up.svg</file>
+        <file>arrow-right.svg</file>
+        <file>check.svg</file>
+        <file>partial.svg</file>
+        <file>dot.svg</file>
+    </qresource>
+</RCC>
