@@ -224,6 +224,7 @@ class MainWindow : public QMainWindow {
     void updateInstanceToolIcon(QString new_icon);
     void setSelectedInstanceById(const QString& id);
     void updateStatusCenter();
+    void updateAccountStatus();
     void setInstanceActionsEnabled(bool enabled);
 
     void runModalTask(Task* task);
@@ -237,6 +238,8 @@ class MainWindow : public QMainWindow {
     QToolButton* newsLabel = nullptr;
     QLabel* m_statusLeft = nullptr;
     QLabel* m_statusCenter = nullptr;
+    QToolButton* m_statusVersion = nullptr;
+    QLabel* m_statusAccount = nullptr;
     InstanceSidePanel* instancePanel = nullptr;
     QToolButton* helpMenuButton = nullptr;
     KonamiCode* secretEventFilter = nullptr;

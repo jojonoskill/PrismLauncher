@@ -184,7 +184,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
         ui->instanceToolBar->setVisibilityState(QByteArray::fromBase64(instanceToolbarSetting->get().toString().toUtf8()));
 
-        ui->instanceToolBar->addContextMenuAction(ui->newsToolBar->toggleViewAction());
         ui->instanceToolBar->addContextMenuAction(ui->instanceToolBar->toggleViewAction());
         ui->instanceToolBar->addContextMenuAction(ui->actionToggleStatusBar);
         ui->instanceToolBar->addContextMenuAction(ui->actionLockToolbars);
@@ -245,7 +244,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // add the toolbar toggles to the view menu
     ui->viewMenu->addAction(ui->instanceToolBar->toggleViewAction());
-    ui->viewMenu->addAction(ui->newsToolBar->toggleViewAction());
 
     updateThemeMenu();
     updateMainToolBar();
@@ -273,19 +271,28 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
         connect(secretEventFilter, &KonamiCode::triggered, this, &MainWindow::konamiTriggered);
     }
 
-    // Add the news label to the news toolbar.
+    // News lives in the footer (status bar) now, and only shows up while there's an unread post.
+    // The old news toolbar is removed entirely, so a saved window state can't bring it back.
     {
         m_newsChecker.reset(new NewsChecker(APPLICATION->network(), BuildConfig.NEWS_RSS_URL));
         newsLabel = new QToolButton();
+        newsLabel->setObjectName("footerNewsButton");
         newsLabel->setIcon(QIcon::fromTheme("news"));
-        newsLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         newsLabel->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         newsLabel->setFocusPolicy(Qt::NoFocus);
-        ui->newsToolBar->insertWidget(ui->actionMoreNews, newsLabel);
+        newsLabel->setAutoRaise(true);
+        newsLabel->setVisible(false);
+
+        // the generated UI code still touches it (retranslateUi), so hide it rather than delete it;
+        // without an object name, restoreState() can't match it and bring it back
+        removeToolBar(ui->newsToolBar);
+        ui->newsToolBar->setObjectName(QString());
+        ui->newsToolBar->hide();
+        ui->actionHelpButton->menu()->addSeparator();
+        ui->actionHelpButton->menu()->addAction(ui->actionMoreNews);
 
         connect(newsLabel, &QAbstractButton::clicked, this, &MainWindow::newsButtonClicked);
         connect(m_newsChecker.get(), &NewsChecker::newsLoaded, this, &MainWindow::updateNewsLabel);
-        updateNewsLabel();
     }
 
     // Create the instance list widget
@@ -376,10 +383,38 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     // When the global settings page closes, we want to know about it and update our state
     connect(APPLICATION, &Application::globalSettingsApplied, this, &MainWindow::globalSettingsClosed);
 
+    // One-line footer: version (click to check for updates), unread news, account, then instance count and playtime.
+    // The selected instance's description used to live here; the side panel shows it now, so that label stays hidden.
     m_statusLeft = new QLabel(tr("No instance selected"), this);
-    m_statusCenter = new QLabel(tr("Total playtime: 0s"), this);
-    statusBar()->addPermanentWidget(m_statusLeft, 1);
+    m_statusLeft->hide();
+
+    m_statusVersion = new QToolButton(this);
+    m_statusVersion->setObjectName("footerVersionButton");
+    m_statusVersion->setAutoRaise(true);
+    m_statusVersion->setFocusPolicy(Qt::NoFocus);
+    m_statusVersion->setText(QString("%1 %2").arg(BuildConfig.LAUNCHER_DISPLAYNAME, BuildConfig.printableVersionString()));
+    if (APPLICATION->updaterEnabled()) {
+        m_statusVersion->setToolTip(tr("Check for updates"));
+        connect(m_statusVersion, &QToolButton::clicked, this, &MainWindow::checkForUpdates);
+    } else {
+        m_statusVersion->setToolTip(tr("About %1").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+        connect(m_statusVersion, &QToolButton::clicked, this, &MainWindow::on_actionAbout_triggered);
+    }
+
+    m_statusAccount = new QLabel(this);
+    m_statusAccount->setObjectName("footerAccountLabel");
+    m_statusCenter = new QLabel(this);
+    m_statusCenter->setObjectName("footerStatsLabel");
+
+    statusBar()->addPermanentWidget(m_statusVersion, 0);
+    statusBar()->addPermanentWidget(newsLabel, 0);
+    statusBar()->addPermanentWidget(m_statusAccount, 0);
+    statusBar()->addPermanentWidget(new QWidget(this), 1);  // pushes the stats to the right
     statusBar()->addPermanentWidget(m_statusCenter, 0);
+
+    connect(APPLICATION->instances(), &InstanceList::rowsInserted, this, &MainWindow::updateStatusCenter);
+    connect(APPLICATION->instances(), &InstanceList::rowsRemoved, this, &MainWindow::updateStatusCenter);
+    updateNewsLabel();
 
     // Add "manage accounts" button, right align
     QWidget* spacer = new QWidget();
@@ -396,6 +431,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     // Template hell sucks...
     connect(APPLICATION->accounts(), &AccountList::defaultAccountChanged, [this] { defaultAccountChanged(); });
     connect(APPLICATION->accounts(), &AccountList::listChanged, [this] { defaultAccountChanged(); });
+    connect(APPLICATION->accounts(), &AccountList::dataChanged, this, [this] { updateAccountStatus(); });
 
     // Show initial account
     defaultAccountChanged();
@@ -497,7 +533,6 @@ void MainWindow::lockToolbars(bool state)
 {
     ui->mainToolBar->setMovable(!state);
     ui->instanceToolBar->setMovable(!state);
-    ui->newsToolBar->setMovable(!state);
     APPLICATION->settings()->set("ToolbarsLocked", state);
 }
 
@@ -511,14 +546,12 @@ void MainWindow::konamiTriggered()
         ui->mainToolBar->setStyleSheet("");
         ui->instanceToolBar->setStyleSheet("");
         ui->centralWidget->setStyleSheet("");
-        ui->newsToolBar->setStyleSheet("");
         ui->statusBar->setStyleSheet("");
         qDebug() << "Super Secret Mode DEACTIVATED!";
     } else {
         ui->mainToolBar->setStyleSheet(stylesheet);
         ui->instanceToolBar->setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1," + gradient);
         ui->centralWidget->setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1," + gradient);
-        ui->newsToolBar->setStyleSheet(stylesheet);
         ui->statusBar->setStyleSheet(stylesheet);
         qDebug() << "Super Secret Mode ACTIVATED!";
     }
@@ -746,6 +779,7 @@ void MainWindow::changeActiveAccount()
 void MainWindow::defaultAccountChanged()
 {
     repopulateAccountsMenu();
+    updateAccountStatus();
 
     MinecraftAccountPtr account = APPLICATION->accounts()->defaultAccount();
 
@@ -765,6 +799,41 @@ void MainWindow::defaultAccountChanged()
     // Set the icon to the "no account" icon.
     ui->actionAccountsButton->setIcon(QIcon::fromTheme("noaccount"));
     ui->actionAccountsButton->setText(tr("Accounts"));
+}
+
+void MainWindow::updateAccountStatus()
+{
+    MinecraftAccountPtr account = APPLICATION->accounts()->defaultAccount();
+    if (!account || account->profileName().isEmpty()) {
+        m_statusAccount->setText(tr("No account"));
+        m_statusAccount->setProperty("accountState", "problem");
+    } else {
+        QString state;
+        QString style = "ok";
+        switch (account->accountState()) {
+            case AccountState::Online:
+                state = tr("signed in");
+                break;
+            case AccountState::Working:
+                state = tr("signing in…");
+                break;
+            case AccountState::Unchecked:
+            case AccountState::Offline:
+                break;
+            case AccountState::Disabled:
+            case AccountState::Errored:
+            case AccountState::Expired:
+            case AccountState::Gone:
+                state = tr("needs sign-in");
+                style = "problem";
+                break;
+        }
+        m_statusAccount->setText(state.isEmpty() ? account->profileName() : account->profileName() + QStringLiteral(" · ") + state);
+        m_statusAccount->setProperty("accountState", style);
+    }
+    // re-polish so the stylesheet picks up the new accountState property
+    m_statusAccount->style()->unpolish(m_statusAccount);
+    m_statusAccount->style()->polish(m_statusAccount);
 }
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
@@ -799,21 +868,18 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* ev)
 
 void MainWindow::updateNewsLabel()
 {
+    // only advertise news the user hasn't opened yet
+    newsLabel->setVisible(false);
     if (m_newsChecker->isLoadingNews()) {
-        newsLabel->setText(tr("Loading news..."));
-        newsLabel->setEnabled(false);
         ui->actionMoreNews->setVisible(false);
-    } else {
-        QList<NewsEntryPtr> entries = m_newsChecker->getNewsEntries();
-        if (entries.length() > 0) {
-            newsLabel->setText(entries[0]->title);
-            newsLabel->setEnabled(true);
-            ui->actionMoreNews->setVisible(true);
-        } else {
-            newsLabel->setText(tr("No news available."));
-            newsLabel->setEnabled(false);
-            ui->actionMoreNews->setVisible(false);
-        }
+        return;
+    }
+    QList<NewsEntryPtr> entries = m_newsChecker->getNewsEntries();
+    ui->actionMoreNews->setVisible(!entries.isEmpty());
+    if (!entries.isEmpty() && entries[0]->link != APPLICATION->settings()->get("LastReadNews").toString()) {
+        newsLabel->setText(entries[0]->title);
+        newsLabel->setToolTip(tr("New post, click to read"));
+        newsLabel->setVisible(true);
     }
 }
 
@@ -1468,6 +1534,11 @@ void MainWindow::newsButtonClicked()
     NewsDialog news_dialog(entries, this);
     news_dialog.toggleArticleList();
     news_dialog.exec();
+
+    if (!entries.isEmpty()) {
+        APPLICATION->settings()->set("LastReadNews", entries[0]->link);
+    }
+    updateNewsLabel();
 }
 
 void MainWindow::onCatChanged(int)
@@ -1756,14 +1827,16 @@ void MainWindow::checkInstancePathForProblems()
 
 void MainWindow::updateStatusCenter()
 {
-    m_statusCenter->setVisible(APPLICATION->settings()->get("ShowGlobalGameTime").toBool());
+    // "3 instances · 2d 4h played"
+    const int count = APPLICATION->instances()->count();
+    QString text = count == 1 ? tr("1 instance") : tr("%1 instances").arg(count);
 
-    int timePlayed = APPLICATION->instances()->getTotalPlayTime();
-    if (timePlayed > 0) {
-        m_statusCenter->setText(
-            tr("Total playtime: %1")
-                .arg(Time::prettifyDuration(timePlayed, APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool())));
+    const int timePlayed = APPLICATION->instances()->getTotalPlayTime();
+    if (APPLICATION->settings()->get("ShowGlobalGameTime").toBool() && timePlayed > 0) {
+        text += QStringLiteral(" · ") +
+                tr("%1 played").arg(Time::prettifyDuration(timePlayed, APPLICATION->settings()->get("ShowGameTimeWithoutDays").toBool()));
     }
+    m_statusCenter->setText(text);
 }
 // "Instance actions" are actions that require an instance to be selected (i.e. "new instance" is not here)
 // Actions that also require other conditions (e.g. a running instance) won't be changed.

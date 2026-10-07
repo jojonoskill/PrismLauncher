@@ -185,23 +185,6 @@ QToolButton#killButton:hover {
     background-color: #4c2326;
 }
 
-/* News and status bar read as one footer */
-QToolBar#newsToolBar {
-    background-color: #141417;
-    border-top: 1px solid #2a2a30;
-    padding: 2px 10px 0px 10px;
-    qproperty-iconSize: 18px 18px;
-}
-
-QToolBar#newsToolBar QToolButton {
-    color: #a1a1aa;
-    font-size: 11pt;
-}
-
-QToolBar#newsToolBar QToolButton:hover {
-    color: #e4e4e7;
-}
-
 QToolBar::handle {
     image: none;
     width: 0px;
@@ -329,22 +312,46 @@ QMenu::right-arrow {
     margin-right: 6px;
 }
 
-/* ---------- Status bar ---------- */
+/* ---------- Footer (status bar) ---------- */
 
 QStatusBar {
     background-color: #141417;
     color: #a1a1aa;
+    border-top: 1px solid #2a2a30;
+    padding: 0px 8px;
+}
+
+QStatusBar::item {
     border: none;
 }
 
 QStatusBar QLabel {
     color: #a1a1aa;
-    font-size: 10.5pt;
+    font-size: 10pt;
     padding: 4px 8px;
 }
 
-QStatusBar::item {
-    border: none;
+QStatusBar QToolButton {
+    color: #a1a1aa;
+    font-size: 10pt;
+    padding: 3px 14px 3px 8px;
+    border-radius: 6px;
+    qproperty-iconSize: 16px 16px;
+}
+
+QStatusBar QToolButton:hover {
+    color: #e4e4e7;
+    background-color: #1f1f23;
+    border-color: transparent;
+}
+
+/* unread news stands out a little */
+QToolButton#footerNewsButton {
+    color: #86efac;
+}
+
+QLabel#footerAccountLabel[accountState="problem"] {
+    color: #fbbf24;
 }
 
 /* ---------- Buttons ---------- */

@@ -82,7 +82,7 @@ QString describeLastLaunch(qint64 msecsSinceEpoch)
         return QObject::tr("Yesterday");
     }
     if (days < 7) {
-        return QObject::tr("%n day(s) ago", "", int(days));
+        return QObject::tr("%1 days ago").arg(days);
     }
     return QLocale().toString(date, QLocale::ShortFormat);
 }
