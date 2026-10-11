@@ -72,6 +72,9 @@ jobs:
             qrencode:p
 
       - name: Configure
+        env:
+          # stored as a repository secret so it never lands in the source; empty (CurseForge hidden) if unset
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -79,7 +82,8 @@ jobs:
             -DBUILD_TESTING=OFF \
             -DENABLE_LTO=ON \
             -DLauncher_BUILD_ARTIFACT="$ARTIFACT_NAME" \
-            -DLauncher_BUILD_PLATFORM=custom
+            -DLauncher_BUILD_PLATFORM=custom \
+            -DLauncher_CURSEFORGE_API_KEY="$CURSEFORGE_API_KEY"
 
       - name: Build
         run: cmake --build build
