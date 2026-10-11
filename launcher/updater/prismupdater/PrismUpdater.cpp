@@ -1231,7 +1231,9 @@ GitHubRelease PrismUpdaterApp::getLatestRelease()
 
 bool PrismUpdaterApp::needUpdate(const GitHubRelease& release)
 {
-    auto current_ver = Version(QString("%1.%2.%3").arg(m_prismVersionMajor).arg(m_prismVersionMinor).arg(m_prismVersionPatch));
+    // Compare the full version: rebuilding it from major.minor.patch drops this fork's fourth component,
+    // which made 11.1.1.1 look older than itself and offered the same release forever.
+    auto current_ver = Version(m_prismVersion.section('-', 0, 0));
     return current_ver < release.version;
 }
 
