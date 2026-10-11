@@ -184,7 +184,7 @@ set(Launcher_VERSION_MINOR 1)
 set(Launcher_VERSION_PATCH 1)
 # Our own release number on top of the upstream version: 11.1.1.1, 11.1.1.2, ... Reset to 1 after merging a new
 # upstream release. The updater compares versions section by section, so 11.1.1.1 counts as newer than upstream 11.1.1.
-set(Launcher_VERSION_FORK 1)
+set(Launcher_VERSION_FORK 2)
 
 set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}.${Launcher_VERSION_PATCH}.${Launcher_VERSION_FORK}")
 set(Launcher_VERSION_NAME4 "${Launcher_VERSION_NAME}")
