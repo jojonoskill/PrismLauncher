@@ -33,7 +33,9 @@
 
 #include "tasks/ConcurrentTask.h"
 
+class QLabel;
 class QPushButton;
+class QTimer;
 
 struct BlockedMod {
     QString name;
@@ -73,10 +75,23 @@ class BlockedModsDialog : public QDialog {
     QFileSystemWatcher m_watcher;
     shared_qobject_ptr<ConcurrentTask> m_hashingTask;
     QSet<QString> m_pendingHashPaths;
-    bool m_rehashPending;
+    bool m_rehashPending = false;
     QString m_hashType;
 
-    void openAll(bool missingOnly);
+    struct Row {
+        QLabel* status;
+        QLabel* state;
+        QPushButton* button;
+    };
+    QList<Row> m_rows;
+    // set once the user starts the guided download: every file that turns up opens the next missing page
+    bool m_guided = false;
+    QSet<int> m_opened;
+    QTimer* m_autoAccept;
+
+    void buildRows();
+    void openMod(int index);
+    void openNextMissing();
     void addDownloadFolder();
     void update();
     void directoryChanged(QString path);

@@ -38,6 +38,9 @@
 #include <QDragEnterEvent>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QMimeData>
 #include <QPushButton>
 #include <QStandardPaths>
@@ -53,12 +56,31 @@ BlockedModsDialog::BlockedModsDialog(QWidget* parent, const QString& title, cons
     ui->setupUi(this);
 
     ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
-    ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("OK"));
-    connect(ui->openMissingButton, &QPushButton::clicked, this, [this]() { openAll(true); });
-    connect(ui->downloadFolderButton, &QPushButton::clicked, this, &BlockedModsDialog::addDownloadFolder);
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setAutoDefault(false);
+    ui->openMissingButton->setDefault(true);
+    connect(ui->openMissingButton, &QPushButton::clicked, this, [this]() {
+        m_guided = true;
+        openNextMissing();
+    });
+    connect(ui->labelWatched, &QLabel::linkActivated, this, [this](const QString& link) {
+        if (link == "add-folder")
+            addDownloadFolder();
+        else
+            QDesktopServices::openUrl(QUrl(link));
+    });
+
+    // once everything is found, carry on with the install by itself (a short pause shows the result)
+    m_autoAccept = new QTimer(this);
+    m_autoAccept->setSingleShot(true);
+    m_autoAccept->setInterval(1500);
+    connect(m_autoAccept, &QTimer::timeout, this, [this] {
+        if (allModsMatched())
+            accept();
+    });
 
     connect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, &BlockedModsDialog::directoryChanged);
 
+    qDebug() << "[Blocked Mods Dialog]" << text;
     qDebug() << "[Blocked Mods Dialog] Mods List:" << mods;
 
     // defer setup of file system watchers until after the dialog is shown
@@ -70,14 +92,92 @@ BlockedModsDialog::BlockedModsDialog(QWidget* parent, const QString& title, cons
     });
 
     this->setWindowTitle(title);
-    ui->labelDescription->setText(text);
 
-    // force all URL handling as external
-    connect(ui->textBrowserWatched, &QTextBrowser::anchorClicked, this, [](const QUrl url) { QDesktopServices::openUrl(url); });
+    QFont titleFont = ui->labelTitle->font();
+    titleFont.setPointSizeF(titleFont.pointSizeF() * 1.4);
+    titleFont.setBold(true);
+    ui->labelTitle->setFont(titleFont);
+    ui->labelDescription->setText(
+        tr("Their authors only allow downloading them from the website, so the launcher can't fetch them for you.<br/><br/>"
+           "Click <b>Download missing files</b>. Each download page opens in your browser and the download usually starts "
+           "by itself after a few seconds (if not, click the download button on the page). The launcher picks the files up "
+           "from your downloads folder, opens the next page, and continues the install when everything is there."));
 
+    buildRows();
     setAcceptDrops(true);
 
     update();
+}
+
+void BlockedModsDialog::buildRows()
+{
+    ui->listContainer->setStyleSheet(
+        "QFrame#blockedRow { background: rgba(127, 127, 127, 0.12); border-radius: 8px; }"
+        "QLabel#blockedRowState { color: palette(placeholder-text); }");
+
+    for (int i = 0; i < m_mods.size(); i++) {
+        auto row = new QFrame(ui->listContainer);
+        row->setObjectName("blockedRow");
+        auto layout = new QHBoxLayout(row);
+        layout->setContentsMargins(12, 8, 8, 8);
+        layout->setSpacing(10);
+
+        auto status = new QLabel(row);
+        status->setFixedWidth(20);
+        status->setAlignment(Qt::AlignCenter);
+        QFont statusFont = status->font();
+        statusFont.setPointSizeF(statusFont.pointSizeF() * 1.3);
+        statusFont.setBold(true);
+        status->setFont(statusFont);
+
+        auto textBox = new QVBoxLayout();
+        textBox->setSpacing(1);
+        auto name = new QLabel(m_mods[i].name, row);
+        name->setToolTip(m_mods[i].websiteUrl);
+        // long file names get clipped instead of stretching the dialog
+        name->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+        auto state = new QLabel(row);
+        state->setObjectName("blockedRowState");
+        state->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+        textBox->addWidget(name);
+        textBox->addWidget(state);
+
+        auto button = new QPushButton(tr("Download"), row);
+        button->setAutoDefault(false);
+        connect(button, &QPushButton::clicked, this, [this, i] { openMod(i); });
+
+        layout->addWidget(status);
+        layout->addLayout(textBox, 1);
+        layout->addWidget(button);
+        ui->listLayout->addWidget(row);
+        m_rows.append({ status, state, button });
+    }
+    ui->listLayout->addStretch(1);
+}
+
+void BlockedModsDialog::openMod(int index)
+{
+    m_opened.insert(index);
+    QDesktopServices::openUrl(m_mods[index].websiteUrl);
+    update();
+}
+
+/// @brief open the first missing file's page that hasn't been opened yet (or the first missing one, if all were)
+void BlockedModsDialog::openNextMissing()
+{
+    int firstMissing = -1;
+    for (int i = 0; i < m_mods.size(); i++) {
+        if (m_mods[i].matched)
+            continue;
+        if (!m_opened.contains(i)) {
+            openMod(i);
+            return;
+        }
+        if (firstMissing < 0)
+            firstMissing = i;
+    }
+    if (firstMissing >= 0)
+        openMod(firstMissing);
 }
 
 BlockedModsDialog::~BlockedModsDialog()
@@ -123,15 +223,6 @@ void BlockedModsDialog::done(int r)
     disconnect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, &BlockedModsDialog::directoryChanged);
 }
 
-void BlockedModsDialog::openAll(bool missingOnly)
-{
-    for (auto& mod : m_mods) {
-        if (!missingOnly || !mod.matched) {
-            QDesktopServices::openUrl(mod.websiteUrl);
-        }
-    }
-}
-
 void BlockedModsDialog::addDownloadFolder()
 {
     QString dir =
@@ -146,38 +237,70 @@ void BlockedModsDialog::addDownloadFolder()
 /// @brief update UI with current status of the blocked mod detection
 void BlockedModsDialog::update()
 {
-    QString text;
-    QString span;
-
-    for (auto& mod : m_mods) {
+    const QColor found(0x4c, 0xbb, 0x6c);
+    int foundCount = 0;
+    for (int i = 0; i < m_mods.size() && i < m_rows.size(); i++) {
+        const auto& mod = m_mods[i];
+        auto& row = m_rows[i];
         if (mod.matched) {
-            // &#x2714; -> html for HEAVY CHECK MARK : ✔
-            span = QString(tr("<span style=\"color:green\"> &#x2714; Found at %1 </span>")).arg(mod.localPath);
+            foundCount++;
+            row.status->setText(QString::fromUtf8("✓"));
+            row.status->setStyleSheet(QString("color: %1;").arg(found.name()));
+            row.state->setText(tr("Found: %1").arg(QDir::toNativeSeparators(mod.localPath)));
+            row.state->setToolTip(QDir::toNativeSeparators(mod.localPath));
+            row.button->hide();
+        } else if (m_opened.contains(i)) {
+            row.status->setText(QString::fromUtf8("↓"));
+            row.status->setStyleSheet("");
+            row.state->setText(tr("Opened in your browser, waiting for the file..."));
+            row.button->setText(tr("Open again"));
+            row.button->show();
         } else {
-            // &#x2718; -> html for HEAVY BALLOT X : ✘
-            span = QString(tr("<span style=\"color:red\"> &#x2718; Not Found </span>"));
+            row.status->setText(QString::fromUtf8("○"));
+            row.status->setStyleSheet("");
+            row.state->setText(tr("Not downloaded yet"));
+            row.button->setText(tr("Download"));
+            row.button->show();
         }
-        text += QString(tr("%1: <a href='%2'>%2</a> <p>Hash: %3 %4</p> <br/>")).arg(mod.name, mod.websiteUrl, mod.hash, span);
     }
 
-    ui->textBrowserModsListing->setText(text);
+    const int total = m_mods.size();
+    const int missing = total - foundCount;
+    ui->progressBar->setRange(0, total);
+    ui->progressBar->setValue(foundCount);
+    ui->progressBar->setFormat(tr("%1 of %2 found").arg(foundCount).arg(total));
+    ui->labelTitle->setText(missing == 0 ? tr("All files found") : missing == 1 ? tr("1 file needs a manual download")
+                                                                                : tr("%1 files need a manual download").arg(missing));
 
-    QString watching;
+    QStringList watching;
     for (auto& dir : m_watcher.directories()) {
-        QUrl fileURL = QUrl::fromLocalFile(dir);
-        watching += QString("<a href=\"%1\">%2</a><br/>").arg(fileURL.toString(), dir);
+        // the watcher also holds every subfolder; only list the top-level ones
+        bool isSubfolder = std::any_of(watching.begin(), watching.end(), [&dir](const QString& w) { return dir.startsWith(w + "/"); });
+        if (!isSubfolder)
+            watching << dir;
     }
+    QStringList links;
+    for (auto& dir : watching)
+        links << QString("<a href=\"%1\">%2</a>").arg(QUrl::fromLocalFile(dir).toString(), QDir::toNativeSeparators(dir).toHtmlEscaped());
+    ui->labelWatched->setText(tr("Looking for files in %1. Downloaded somewhere else? <a href=\"add-folder\">Add a folder</a> or drag "
+                                 "the files onto this window.")
+                                  .arg(links.isEmpty() ? tr("your downloads folder") : links.join(", ")));
 
-    ui->textBrowserWatched->setText(watching);
-
-    if (allModsMatched()) {
-        ui->labelModsFound->setText("<span style=\"color:green\">✔</span>" + tr("All mods found"));
-        ui->openMissingButton->setDisabled(true);
-        ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("OK"));
+    auto okButton = ui->buttonBox->button(QDialogButtonBox::Ok);
+    if (missing == 0) {
+        ui->labelModsFound->setText(tr("Continuing the install..."));
+        ui->openMissingButton->hide();
+        okButton->setText(tr("Continue"));
+        if (!m_autoAccept->isActive())
+            m_autoAccept->start();
     } else {
-        ui->labelModsFound->setText(tr("Please download the missing mods."));
-        ui->openMissingButton->setDisabled(false);
-        ui->buttonBox->button(QDialogButtonBox::Ok)->setText(tr("Skip"));
+        m_autoAccept->stop();
+        ui->labelModsFound->clear();
+        ui->openMissingButton->show();
+        ui->openMissingButton->setText(m_guided ? tr("Open next file") : tr("Download missing files"));
+        // the theme's default-button style is bolder than what the size hint measures, so leave some room
+        ui->openMissingButton->setMinimumWidth(ui->openMissingButton->fontMetrics().horizontalAdvance(ui->openMissingButton->text()) + 48);
+        okButton->setText(tr("Skip these files"));
     }
 }
 
@@ -310,6 +433,16 @@ void BlockedModsDialog::checkMatchHash(QString hash, QString path)
 
     if (match) {
         update();
+        // guided download: once every page we opened has delivered its file, open the next one
+        if (m_guided) {
+            QTimer::singleShot(700, this, [this] {
+                for (int i : m_opened) {
+                    if (!m_mods[i].matched)
+                        return;
+                }
+                openNextMissing();
+            });
+        }
     }
 }
 
