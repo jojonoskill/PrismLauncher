@@ -1,0 +1,89 @@
+name: Upstream Sync Check
+
+# Daily: is there a newer stable Prism Launcher release than the one `stable` points at?
+# If so, test-rebase `custom` onto it and open an issue saying whether it applies cleanly.
+# It never pushes: the built-in token can't push commits that touch workflow files, and
+# new upstream releases should be tried locally first anyway. To sync, run D:/Dev/elytra-sync.sh.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: custom
+          fetch-depth: 0
+
+      - name: Look for a newer Prism release
+        id: check
+        run: |
+          git remote add upstream https://github.com/PrismLauncher/PrismLauncher.git
+          git fetch -q upstream --tags
+          git fetch -q origin stable
+
+          latest=$(git tag -l | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          old_base=$(git rev-parse origin/stable)
+          new_base=$(git rev-parse "$latest^{commit}")
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+          if [ "$old_base" = "$new_base" ]; then
+            echo "stable is already at $latest"
+            echo "result=up-to-date" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rebase --onto "$new_base" "$old_base" custom; then
+            echo "result=clean" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "conflicts<<EOF"
+              git diff --name-only --diff-filter=U
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            git rebase --abort
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open an issue (once per release)
+        if: steps.check.outputs.result != 'up-to-date'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          RESULT: ${{ steps.check.outputs.result }}
+          CONFLICTS: ${{ steps.check.outputs.conflicts }}
+        run: |
+          title="Prism Launcher $LATEST is out"
+          if gh issue list --repo "$GITHUB_REPOSITORY" --state all --search "\"$title\" in:title" --json title --jq '.[].title' | grep -qxF "$title"; then
+            echo "Issue for $LATEST already exists"
+            exit 0
+          fi
+
+          if [ "$RESULT" = "clean" ]; then
+            body="Official Prism Launcher **$LATEST** was released, and Elytra's changes apply on top of it **without conflicts**.
+
+          To sync: run \`bash D:/Dev/elytra-sync.sh\`, try the test build, then release (reset \`Launcher_VERSION_FORK\` to 1 for the first Elytra release on $LATEST)."
+          else
+            body="Official Prism Launcher **$LATEST** was released, but rebasing Elytra's changes onto it **hits conflicts** in:
+
+          \`\`\`
+          $CONFLICTS
+          \`\`\`
+
+          Run \`bash D:/Dev/elytra-sync.sh\`; it stops at the conflict so it can be resolved (or hand it to Claude)."
+          fi
+
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
