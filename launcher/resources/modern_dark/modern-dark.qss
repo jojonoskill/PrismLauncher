@@ -852,3 +852,132 @@ QFrame[frameShape="5"] {
     max-height: 16777215px;
     max-width: 1px;
 }
+
+/* ---------- Servers window (Elytra) ---------- */
+
+QWidget#serversListPanel {
+    background-color: #17171a;
+}
+
+QListView#serverList {
+    background-color: transparent;
+    border: none;
+}
+
+QListView#serverList::item {
+    margin: 2px 0px;
+    border-radius: 10px;
+}
+
+QLabel#serverSectionTitle {
+    color: #a1a1aa;
+    font-size: 10.5pt;
+    font-weight: 600;
+}
+
+QLabel#serverNameLabel {
+    font-size: 20pt;
+    font-weight: 700;
+}
+
+QLabel#serverStateLabel {
+    color: #a1a1aa;
+    font-size: 12.5pt;
+}
+
+QLabel#serverDialogTitle, QLabel#serversEmptyTitle {
+    font-size: 18pt;
+    font-weight: 700;
+}
+
+QLabel#serversEmptyText, QLabel#serverHintLabel {
+    color: #a1a1aa;
+}
+
+QLabel#serverBackupSummary {
+    font-size: 13pt;
+}
+
+QLabel#serverInfoNote {
+    background-color: #1c2333;
+    border: 1px solid #2c3a55;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #c7d2fe;
+}
+
+QLabel#serverWarningNote {
+    background-color: #33290f;
+    border: 1px solid #5c4a1a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #fde68a;
+}
+
+QPushButton#serverStartButton {
+    background-color: #1f4d30;
+    color: #dcfce7;
+    border: 1px solid #4ade80;
+    border-radius: 12px;
+    font-size: 14pt;
+    font-weight: 700;
+    padding: 9px 28px;
+    min-height: 26px;
+    min-width: 120px;
+}
+
+QPushButton#serverStartButton:hover {
+    background-color: #26603b;
+    border-color: #86efac;
+}
+
+QPushButton#serverStartButton:pressed {
+    background-color: #2d7046;
+}
+
+QPushButton#serverStartButton:disabled {
+    background-color: #202024;
+    color: #5c5c66;
+    border-color: #2a2a30;
+}
+
+QPushButton#serverActionButton, QPushButton#serverNewButton, QToolButton#serverMoreButton {
+    font-size: 12.5pt;
+    padding: 9px 18px;
+    min-height: 26px;
+    border-radius: 10px;
+}
+
+QToolButton#serverMoreButton {
+    background-color: #26262b;
+    border: 1px solid #34343b;
+    padding-right: 34px;
+}
+
+QToolButton#serverMoreButton:hover {
+    background-color: #2e2e34;
+    border-color: #41414a;
+}
+
+QPlainTextEdit#serverConsoleLog {
+    background-color: #0e0e10;
+    border: 1px solid #2a2a30;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+QLineEdit#serverCommandEdit {
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    padding: 8px 10px;
+    min-height: 22px;
+}
+
+QPushButton#serverSendButton {
+    padding: 8px 20px;
+    min-height: 22px;
+}
+
+QTabWidget#serverTabs QTabBar::tab {
+    font-size: 12.5pt;
+    padding: 8px 18px;
+}

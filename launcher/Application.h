@@ -52,6 +52,7 @@
 #include "minecraft/auth/MinecraftAccount.h"
 
 class LaunchController;
+class ServerList;
 class LocalPeer;
 class InstanceWindow;
 class MainWindow;
@@ -134,6 +135,7 @@ class Application : public QApplication {
     JavaInstallList* javalist();
 
     InstanceList* instances() const { return m_instances.get(); }
+    ServerList* servers() const { return m_servers.get(); }
 
     IconList* icons() const { return m_icons.get(); }
 
@@ -258,6 +260,7 @@ class Application : public QApplication {
 
     std::unique_ptr<SettingsObject> m_settings;
     std::unique_ptr<InstanceList> m_instances;
+    std::unique_ptr<ServerList> m_servers;
     std::unique_ptr<IconList> m_icons;
     std::unique_ptr<JavaInstallList> m_javalist;
     std::unique_ptr<TranslationsModel> m_translations;

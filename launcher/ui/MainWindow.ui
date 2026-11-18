@@ -51,6 +51,7 @@
    </attribute>
    <addaction name="actionAddInstance"/>
    <addaction name="actionFoldersButton"/>
+   <addaction name="actionServers"/>
    <addaction name="actionCheckUpdate"/>
    <addaction name="actionCAT"/>
    <addaction name="actionHelpButton"/>
@@ -683,6 +684,17 @@
    </property>
    <property name="toolTip">
     <string>Open one of the folders shared between instances.</string>
+   </property>
+  </action>
+  <action name="actionServers">
+   <property name="icon">
+    <iconset theme="server"/>
+   </property>
+   <property name="text">
+    <string>Servers</string>
+   </property>
+   <property name="toolTip">
+    <string>Manage the dedicated servers hosted on this computer.</string>
    </property>
   </action>
   <action name="actionHelpButton">

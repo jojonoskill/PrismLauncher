@@ -55,6 +55,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QButtonGroup>
+#include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -65,11 +66,14 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QProgressBar>
 #include <QProgressDialog>
+#include <QPushButton>
 #include <QShortcut>
 #include <QStatusBar>
 #include <QToolBar>
 #include <QToolButton>
+#include <QVBoxLayout>
 #include <QWidget>
 #include <QWidgetAction>
 #include <memory>
@@ -111,6 +115,11 @@
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
 #include "ui/widgets/InstanceSidePanel.h"
+
+#include "server/ServerInstance.h"
+#include "server/ServerList.h"
+#include "server/ServerProcess.h"
+#include "ui/servers/ServersWindow.h"
 
 #include "minecraft/PackProfile.h"
 #include "minecraft/VersionFile.h"
@@ -525,7 +534,10 @@ void MainWindow::retranslateUi()
     }
 }
 
-MainWindow::~MainWindow() {}
+MainWindow::~MainWindow()
+{
+    delete m_serversWindow.data();
+}
 
 QMenu* MainWindow::createPopupMenu()
 {
@@ -998,6 +1010,91 @@ void MainWindow::addInstance(const QString& url, const QMap<QString, QString>& e
     if (creationTask) {
         instanceFromInstanceTask(creationTask);
     }
+}
+
+void MainWindow::on_actionServers_triggered()
+{
+    // no parent: the servers window gets its own taskbar entry and can sit behind the main window
+    if (!m_serversWindow)
+        m_serversWindow = new ServersWindow();
+    m_serversWindow->show();
+    m_serversWindow->setWindowState(m_serversWindow->windowState() & ~Qt::WindowMinimized);
+    m_serversWindow->raise();
+    m_serversWindow->activateWindow();
+}
+
+bool MainWindow::confirmStopServers()
+{
+    auto* serverList = APPLICATION->servers();
+    if (!serverList || !serverList->anyActive())
+        return true;
+
+    QList<QPointer<ServerInstance>> active;
+    for (auto* server : serverList->servers()) {
+        if (server->process() && server->process()->isActive())
+            active << server;
+    }
+    const int count = static_cast<int>(active.size());
+
+    QMessageBox box(QMessageBox::Warning, tr("Servers running"), (count == 1 ? tr("1 server is still running.") : tr("%1 servers are still running.").arg(count)), QMessageBox::NoButton,
+                    this);
+    box.setInformativeText(tr("%1 stops them cleanly first (the world is saved), then quits.").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+    auto* stopButton = box.addButton(tr("Stop them and quit"), QMessageBox::AcceptRole);
+    auto* cancelButton = box.addButton(QMessageBox::Cancel);
+    box.setDefaultButton(cancelButton);
+    box.exec();
+    if (box.clickedButton() != stopButton)
+        return false;
+
+    for (auto& server : active) {
+        if (server && server->process())
+            server->process()->stop();
+    }
+
+    // wait for them, offering a force kill if it takes long
+    QDialog wait(this);
+    wait.setWindowTitle(tr("Stopping servers"));
+    wait.setWindowModality(Qt::WindowModal);
+    auto* layout = new QVBoxLayout(&wait);
+    layout->setContentsMargins(20, 18, 20, 16);
+    layout->setSpacing(12);
+    auto* label = new QLabel((count == 1 ? tr("Waiting for the server to save the world and stop...") : tr("Waiting for %1 servers to save the world and stop...").arg(count)), &wait);
+    label->setWordWrap(true);
+    layout->addWidget(label);
+    auto* bar = new QProgressBar(&wait);
+    bar->setRange(0, 0);
+    bar->setTextVisible(false);
+    layout->addWidget(bar);
+    auto* buttons = new QDialogButtonBox(&wait);
+    auto* killButton = buttons->addButton(tr("Force kill"), QDialogButtonBox::DestructiveRole);
+    killButton->hide();
+    buttons->addButton(QDialogButtonBox::Cancel);
+    layout->addWidget(buttons);
+    wait.setMinimumWidth(460);
+
+    connect(buttons, &QDialogButtonBox::rejected, &wait, &QDialog::reject);
+    connect(killButton, &QPushButton::clicked, &wait, [&active] {
+        for (auto& server : active) {
+            if (server && server->process() && server->process()->isActive())
+                server->process()->kill();
+        }
+    });
+
+    QTimer poll;
+    poll.setInterval(200);
+    connect(&poll, &QTimer::timeout, &wait, [&wait, serverList] {
+        if (!serverList->anyActive())
+            wait.accept();
+    });
+    poll.start();
+
+    QTimer::singleShot(60000, &wait, [label, killButton] {
+        label->setText(tr("The servers are taking a long time to stop. You can keep waiting, or force kill them "
+                          "(anything since the last autosave may be lost)."));
+        killButton->show();
+    });
+
+    return wait.exec() == QDialog::Accepted;
 }
 
 void MainWindow::on_actionAddInstance_triggered()
@@ -1662,6 +1759,14 @@ void MainWindow::on_actionViewSelectedInstFolder_triggered()
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
+    // Elytra: dedicated servers must be stopped cleanly before the launcher quits
+    if (!confirmStopServers()) {
+        event->ignore();
+        return;
+    }
+    if (m_serversWindow)
+        m_serversWindow->close();
+
     // Save the window state and geometry.
     APPLICATION->settings()->set("MainWindowState", QString::fromUtf8(saveState().toBase64()));
     APPLICATION->settings()->set("MainWindowGeometry", QString::fromUtf8(saveGeometry().toBase64()));

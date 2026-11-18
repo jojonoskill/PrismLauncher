@@ -57,6 +57,7 @@
 #include "ui/instanceview/AccessibleInstanceView.h"
 
 #include "ui/pages/BasePageProvider.h"
+#include "server/ServerList.h"
 #include "ui/pages/global/APIPage.h"
 #include "ui/pages/global/AccountListPage.h"
 #include "ui/pages/global/AppearancePage.h"
@@ -974,6 +975,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         qInfo() << "Loading Instances...";
         m_instances->loadList();
         qInfo() << "<> Instances loaded.";
+    }
+
+    // Elytra: dedicated servers live next to the instances folder, in <data>/servers
+    {
+        m_servers.reset(new ServerList(FS::PathCombine(m_dataPath, "servers"), this));
+        m_servers->load();
+        qInfo() << "<> Servers loaded:" << m_servers->rowCount();
     }
 
     // and accounts

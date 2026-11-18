@@ -43,6 +43,7 @@
 #include <memory>
 
 #include <QMainWindow>
+#include <QPointer>
 #include <QProcess>
 #include <QTimer>
 
@@ -60,6 +61,7 @@ class BaseProfilerFactory;
 class InstanceView;
 class KonamiCode;
 class InstanceTask;
+class ServersWindow;
 
 namespace Ui {
 class MainWindow;
@@ -94,6 +96,8 @@ class MainWindow : public QMainWindow {
     void on_actionAbout_triggered();
 
     void on_actionAddInstance_triggered();
+
+    void on_actionServers_triggered();
 
     void on_actionREDDIT_triggered();
 
@@ -228,6 +232,8 @@ class MainWindow : public QMainWindow {
     void setInstanceActionsEnabled(bool enabled);
 
     void runModalTask(Task* task);
+    /// asks to stop running dedicated servers before quitting; returns true when it is fine to close now
+    bool confirmStopServers();
     void instanceFromInstanceTask(InstanceTask* task);
 
    private:
@@ -249,6 +255,7 @@ class MainWindow : public QMainWindow {
     unique_qobject_ptr<NewsChecker> m_newsChecker;
 
     BaseInstance* m_selectedInstance = nullptr;
+    QPointer<ServersWindow> m_serversWindow;
     QString m_currentInstIcon;
 
     // managed by the application object

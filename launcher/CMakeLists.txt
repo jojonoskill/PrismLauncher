@@ -759,7 +759,50 @@ endif()
 
 ################################ COMPILE ################################
 
+# Elytra: dedicated server management (installing, running, backups)
+set(SERVER_CORE_SOURCES
+    server/ServerLaunchProfile.h
+    server/ServerLaunchProfile.cpp
+    server/ServerProcess.h
+    server/ServerProcess.cpp
+    server/ServerInstance.h
+    server/ServerInstance.cpp
+    server/ServerList.h
+    server/ServerList.cpp
+    server/ServerInstallTask.h
+    server/ServerInstallTask.cpp
+)
+
+set(SERVER_BACKUP_SOURCES
+    server/backup/ServerBackups.h
+    server/backup/ServerBackups.cpp
+    server/backup/RestoreBackupTask.cpp
+    server/backup/WorldImportTask.cpp
+    server/backup/BackupWorldOps.h
+    server/backup/BackupWorldOps.cpp
+    server/backup/WorldReplace.h
+    server/backup/WorldReplace.cpp
+)
+
+set(SERVER_UI_SOURCES
+    ui/servers/ServersWindow.h
+    ui/servers/ServersWindow.cpp
+    ui/servers/ServerConsolePage.h
+    ui/servers/ServerConsolePage.cpp
+    ui/servers/ServerBackupsPage.h
+    ui/servers/ServerBackupsPage.cpp
+    ui/servers/ServerSettingsPage.h
+    ui/servers/ServerSettingsPage.cpp
+    ui/servers/NewServerDialog.h
+    ui/servers/NewServerDialog.cpp
+    ui/servers/ServerUiCommon.h
+    ui/servers/ServerUiCommon.cpp
+)
+
 set(LOGIC_SOURCES
+    ${SERVER_CORE_SOURCES}
+    ${SERVER_BACKUP_SOURCES}
+    ${SERVER_UI_SOURCES}
     ${CORE_SOURCES}
     ${NET_SOURCES}
     ${LAUNCH_SOURCES}
